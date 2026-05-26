@@ -39,6 +39,7 @@ class HybridSecurityBot(commands.Bot):
         intents = discord.Intents.default()
         intents.members = True
         intents.guilds = True
+        intents.message_content = True  # Added to clear configuration warnings
         super().__init__(command_prefix="!", intents=intents)
         self.join_tracker = []
         self.raid_mode_active = False
@@ -60,7 +61,8 @@ async def web_help(interaction: discord.Interaction):
     await interaction.response.send_message(
         f"🛡️ **Aegis Security Framework Mainframe**\n"
         f"Active perimeter monitoring is online. Use structural commands to manage your server sectors.\n\n"
-        f"⚙️ **Available Commands:** `/kick`, `/ban`, `/timeout`", 
+        f"⚙️ **Available Commands:** `/kick`, `/ban`, `/timeout` \n"
+        f"🔗 **Command Node Portal:** https://aegisbott.netlify.app", 
         ephemeral=True
     )
 
@@ -126,4 +128,4 @@ if __name__ == "__main__":
         print("❌ CRITICAL ERROR: 'TOKEN' Environment Variable is completely missing.")
     else:
         bot.run(token)
-        
+    

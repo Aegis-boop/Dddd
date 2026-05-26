@@ -1,13 +1,10 @@
 import os
 import json
-import datetime
-import asyncio
-
-# Prevent library voice import crashes on bare-metal cloud servers
 import discord
 from discord import app_commands
 from discord.ext import commands
-from quart import Quart
+import datetime
+import asyncio
 
 # ─── SECURE STORAGE ENGINE ───────────────────────────────────────────────────
 DATA_FILE = "security_database.json"
@@ -17,14 +14,16 @@ def load_db():
         try:
             with open(DATA_FILE, "r", encoding="utf-8") as f: 
                 return json.load(f)
-        except Exception: pass
+        except Exception: 
+            pass
     return {"recent_flags": []}
 
 def save_db(data):
     try:
         with open(DATA_FILE, "w", encoding="utf-8") as f: 
             json.dump(data, f, indent=4)
-    except Exception: pass
+    except Exception: 
+        pass
 
 def add_flag_log(reason):
     db = load_db()
@@ -56,20 +55,16 @@ async def on_ready():
         print(f"❌ Failed to sync slash commands: {e}")
 
 # ─── DISCORD SLASH COMMANDS ──────────────────────────────────────────────────
-@bot.tree.command(name="help", description="Get your private web portal links.")
+@bot.tree.command(name="help", description="Get information about Aegis.")
 async def web_help(interaction: discord.Interaction):
-    web_url = os.environ.get("PUBLIC_DOMAIN") or os.environ.get("RAILWAY_PUBLIC_DOMAIN", "https://aegisbott.netlify.app")
-    if web_url and not web_url.startswith("http"):
-        web_url = f"https://{web_url}"
-        
     await interaction.response.send_message(
         f"🛡️ **Aegis Security Framework Mainframe**\n"
-        f"To manage your real-time perimeter rules and view incident heat maps, access your command node:\n"
-        f"🔗 **{web_url}**", 
+        f"Active perimeter monitoring is online. Use structural commands to manage your server sectors.\n\n"
+        f"⚙️ **Available Commands:** `/kick`, `/ban`, `/timeout`", 
         ephemeral=True
     )
 
-@bot.tree.command(name="kick", description="Kick a disruptive user.")
+@bot.tree.command(name="kick", description="Kick a disruptive user from the server sector.")
 @app_commands.checks.has_permissions(kick_members=True)
 async def kick_admin(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
     if member.top_role >= interaction.user.top_role: 
@@ -96,7 +91,7 @@ async def timeout_admin(interaction: discord.Interaction, member: discord.Member
     add_flag_log(f"Staff ({interaction.user.name}) isolated user: {member.name} for {minutes}m")
     await interaction.response.send_message(f"🤫 **{member.name}** has been placed in communication isolation for {minutes} minutes.")
 
-# ─── AUTOMATED SHIELDS ───────────────────────────────────────────────────────
+# ─── AUTOMATED SHIELDS (BACKGROUND SYSTEM INTERCEPTS) ───────────────────────
 @bot.event
 async def on_member_join(member):
     now = datetime.datetime.utcnow()
@@ -124,52 +119,11 @@ async def on_guild_channel_delete(channel):
             except Exception: 
                 pass
 
-# ─── QUART WEB LAYER ─────────────────────────────────────────────────────────
-app = Quart(__name__)
-
-@app.route("/")
-async def serve_aegis_mainframe():
-    db = load_db()
-    server_count = len(bot.guilds) if bot.is_ready() else 0
-    user_count = sum(g.member_count for g in bot.guilds) if bot.is_ready() else 0
-    ping = round(bot.latency * 1000) if bot.is_ready() else 0
-    
-    html_filename = "wick-security-site.html"
-    if os.path.exists(html_filename):
-        with open(html_filename, "r", encoding="utf-8") as f:
-            base_html = f.read()
-    else:
-        return f"<h3>Error: File '{html_filename}' not found in root workspace directory.</h3>"
-
-    # Dynamic system update logs processing
-    logs_html = ""
-    for log in db.get("recent_flags", []):
-        logs_html += f'<div class="auto-item"><div class="auto-dot" style="background:#ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.2);"></div>{log}</div>\n        '
-    
-    if not logs_html:
-        logs_html = '<div class="auto-item" style="color:rgba(255,255,255,0.3); font-style:italic; justify-content:center; width:100%; text-align:center; padding: 20px 0;">No server intercept records located in this timeline.</div>\n        '
-        
-    target_placeholder = '<div class="auto-list">'
-    replacement_text = f'{target_placeholder}\n        {logs_html}'
-
-    rendered_site = base_html.replace("123", f"{user_count:,}") \
-                             .replace("∞", f"{server_count:,}") \
-                             .replace("<10ms", f"{ping}ms") \
-                             .replace(target_placeholder, replacement_text)
-    return rendered_site
-
-# ─── RUNNER INITIALIZATION ───────────────────────────────────────────────────
-async def main():
+# ─── RUN BOT ─────────────────────────────────────────────────────────────────
+if __name__ == "__main__":
     token = os.environ.get('TOKEN')
     if not token:
-        print("❌ CRITICAL ERROR: 'TOKEN' Environment Variable missing.")
-        return
-    port = int(os.environ.get("PORT", 8080))
-    await asyncio.gather(
-        bot.start(token), 
-        app.run_task(host="0.0.0.0", port=port, debug=False)
-    )
-
-if __name__ == "__main__":
-    asyncio.run(main())
-    
+        print("❌ CRITICAL ERROR: 'TOKEN' Environment Variable is completely missing.")
+    else:
+        bot.run(token)
+        

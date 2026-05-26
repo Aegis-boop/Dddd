@@ -1,10 +1,26 @@
-import os
+# 1import os
 import json
 import discord
 from discord import app_commands
 from discord.ext import commands
 import datetime
 import asyncio
+from flask import Flask, jsonify
+from flask_cors import CORS
+import threading
+
+# ─── API BRIDGE ──────────────────────────────────────────────────────────────
+app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "https://aegisbott.netlify.app"}})
+
+@app.route('/api/bot-servers', methods=['GET'])
+def get_bot_servers():
+    guild_ids = [str(guild.id) for guild in bot.guilds]
+    return jsonify({"ids": guild_ids})
+
+def run_web_server():
+    port = int(os.environ.get('PORT', 3000))
+    app.run(host='0.0.0.0', port=port)
 
 # ─── SECURE STORAGE ENGINE ───────────────────────────────────────────────────
 DATA_FILE = "security_database.json"
@@ -14,8 +30,7 @@ def load_db():
         try:
             with open(DATA_FILE, "r", encoding="utf-8") as f: 
                 return json.load(f)
-        except Exception: 
-            pass
+        except Exception: pass
     return {"recent_flags": []}
 
 def save_db(data):
@@ -121,11 +136,10 @@ async def on_guild_channel_delete(channel):
             except Exception: 
                 pass
 
-# ─── RUN BOT ─────────────────────────────────────────────────────────────────
+# ─── RUN BOT ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    token = os.environ.get('TOKEN')
-    if not token:
-        print("❌ CRITICAL ERROR: 'TOKEN' Environment Variable is completely missing.")
-    else:
-        bot.run(token)
+    # Start the API server in the background
+    threading.Thread(target=run_web_server, daemon=True).start()
+    # Start the Discord bot
+    bot.run(os.environ.get('TOKEN'))
     
